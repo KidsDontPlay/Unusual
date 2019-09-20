@@ -1,0 +1,7 @@
+{
+  "variants": {
+    "": {
+      "model": "emadem:block/drop_extractor"
+    }
+  }
+}

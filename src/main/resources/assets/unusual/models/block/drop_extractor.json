@@ -1,0 +1,7 @@
+{
+  "parent": "block/cube_all",
+  "textures": {
+    "all": "emadem:blocks/drop_extractor",
+    "particle": "emadem:blocks/drop_extractor"
+  }
+}
