@@ -29,17 +29,18 @@ public class Unusual {
     public Unusual() {
         FMLJavaModLoadingContext.get().getModEventBus().addListener(this::setup);
         FMLJavaModLoadingContext.get().getModEventBus().addListener(this::clientSetup);
+        Config.init();
         MinecraftForge.EVENT_BUS.addListener(this::worldTick);
         MinecraftForge.EVENT_BUS.addListener(this::render);
         //MinecraftForge.EVENT_BUS.addListener(this::mouse);
-        Arrays.stream(Generator.values()).filter(generator -> ModConfig.configs.get(generator).getEnabled().get())
+        Arrays.stream(Generator.values()).filter(generator -> Config.configs.get(generator).getEnabled().get())
                 .forEach(generator -> generator.block.register());
     }
 
     private boolean floatAway = false;
 
     private void worldTick(TickEvent.ClientTickEvent event) {
-        if (event.side.isClient() && event.phase == TickEvent.Phase.END) {
+        if (event.side.isClient() && event.phase == TickEvent.Phase.END && Minecraft.getInstance().world != null) {
             RayTraceResult result = Minecraft.getInstance().objectMouseOver;
             boolean wasFalse = !floatAway || Minecraft.getInstance().world.getGameTime() % 10 == 0;
             floatAway = false;
@@ -63,11 +64,11 @@ public class Unusual {
     private void render(TickEvent.RenderTickEvent event) {
         if (floatAway) {
             PlayerEntity player = Minecraft.getInstance().player;
-            /*Minecraft.getInstance().player
-                    .setPositionAndRotation(player.posX, player.posY, player.posZ, player.rotationYaw + yawDelta,
-                            player.rotationPitch + pitchDelta);*/
-            player.rotationYaw += yawDelta;
-            player.rotationPitch += pitchDelta;
+            int fps = Minecraft.getDebugFPS();
+            if (fps > 0) {
+                player.rotationYaw += yawDelta * (60f / fps);
+                player.rotationPitch += pitchDelta * (60f / fps);
+            }
         }
     }
 

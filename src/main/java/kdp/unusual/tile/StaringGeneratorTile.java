@@ -35,7 +35,7 @@ public class StaringGeneratorTile extends GeneratorTile {
             if (looking) {
                 charge = Math.min(charge + 1, maxCharge);
             } else {
-                charge = 0;
+                charge = Math.max(0, charge - maxCharge / 15);
             }
         }
         if (world.isRemote && world.getGameTime() % 5 == 2) {
@@ -53,7 +53,7 @@ public class StaringGeneratorTile extends GeneratorTile {
     public void handleMessage(PlayerEntity player, CompoundNBT nbt) {
         super.handleMessage(player, nbt);
         if (!player.world.isRemote) {
-            NBTHelper.getOptional(nbt, "l", boolean.class).ifPresent(this::setLooking);
+            NBTHelper.getOptional(nbt, "l", boolean.class).ifPresent(b -> looking = b);
         }
     }
 
@@ -62,7 +62,4 @@ public class StaringGeneratorTile extends GeneratorTile {
         return Generator.STARING;
     }
 
-    public void setLooking(boolean looking) {
-        this.looking = looking;
-    }
 }

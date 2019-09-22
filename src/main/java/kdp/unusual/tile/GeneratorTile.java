@@ -19,12 +19,12 @@ import kdp.limelib.helper.nbt.NBTHelper;
 import kdp.limelib.tile.GenericTile;
 import kdp.limelib.util.EnergyStorageExt;
 import kdp.limelib.util.LimeEnums;
+import kdp.unusual.Config;
 import kdp.unusual.Generator;
-import kdp.unusual.ModConfig;
 
 public abstract class GeneratorTile extends GenericTile implements ITickableTileEntity {
 
-    protected ModConfig.GeneratorConfig config = ModConfig.configs.get(getGeneratorType());
+    protected Config.GeneratorConfig config = Config.configs.get(getGeneratorType());
     private final EnergyStorageExt energyStorage = new EnergyStorageExt(config.getEnergyStorage().get(),
             config.getEnergyStorage().get() / 15) {
         @Override
@@ -34,7 +34,7 @@ public abstract class GeneratorTile extends GenericTile implements ITickableTile
 
         @Override
         protected void onContentsChanged() {
-            sync();
+            markDirty();
         }
     };
     protected final LazyOptional<IEnergyStorage> energyHolder = LazyOptional.of(() -> energyStorage);
@@ -47,24 +47,25 @@ public abstract class GeneratorTile extends GenericTile implements ITickableTile
 
     @Override
     public void readFromSyncNBT(CompoundNBT compound) {
-        energyStorage.setEnergyStored(NBTHelper.get(compound, "e", Integer.class));
         activateMode = NBTHelper.get(compound, "m", LimeEnums.ActivateMode.class);
     }
 
     @Override
     public CompoundNBT writeToSyncNBT(CompoundNBT compound) {
-        return NBTBuilder.of().set("e", energyStorage.getEnergyStored()).set("m", activateMode).build();
+        return NBTBuilder.of(compound).set("m", activateMode).build();
     }
 
     @Override
     public void read(CompoundNBT compound) {
         super.read(compound);
+        energyStorage.setEnergyStored(NBTHelper.get(compound, "e", Integer.class));
         readFromSyncNBT(compound);
     }
 
     @Override
     public CompoundNBT write(CompoundNBT compound) {
         writeToSyncNBT(compound);
+        compound.putInt("e", energyStorage.getEnergyStored());
         return super.write(compound);
     }
 
@@ -72,10 +73,10 @@ public abstract class GeneratorTile extends GenericTile implements ITickableTile
     public void tick() {
         if (!world.isRemote()) {
             int energyPerTick = getEnergyPerTick();
-            if (activateMode == LimeEnums.ActivateMode.ALWAYS_ON//
+            if ((activateMode == LimeEnums.ActivateMode.ALWAYS_ON//
                     || (activateMode == LimeEnums.ActivateMode.ON_WITH_REDSTONE && world.isBlockPowered(pos))//
-                    || (activateMode == LimeEnums.ActivateMode.OFF_WITH_REDSTONE && !world.isBlockPowered(pos))//
-                    || energyPerTick > 0) {
+                    || (activateMode == LimeEnums.ActivateMode.OFF_WITH_REDSTONE && !world.isBlockPowered(pos)))//
+                    && energyPerTick > 0 && energyStorage.getEnergyStored() < energyStorage.getMaxEnergyStored()) {
                 energyStorage.modifyEnergyStored(energyPerTick);
                 if (!getBlockState().get(BlockStateProperties.ENABLED)) {
                     setBlockState(getBlockState().cycle(BlockStateProperties.ENABLED), 2);
@@ -86,7 +87,7 @@ public abstract class GeneratorTile extends GenericTile implements ITickableTile
                 }
             }
             if (world.getGameTime() % 10 == 5) {
-                sendMessage(NBTBuilder.of().set("ec", energyPerTick).build());
+                sendMessage(NBTBuilder.of().set("ec", energyPerTick).set("e", energyStorage.getEnergyStored()).build());
             }
         }
     }
@@ -99,10 +100,15 @@ public abstract class GeneratorTile extends GenericTile implements ITickableTile
         return energyPerTickClient;
     }
 
+    public int getEnergy() {
+        return energyStorage.getEnergyStored();
+    }
+
     @Override
     public void handleMessage(PlayerEntity player, CompoundNBT nbt) {
         if (player.world.isRemote) {
             NBTHelper.getOptional(nbt, "ec", int.class).ifPresent(i -> energyPerTickClient = i);
+            NBTHelper.getOptional(nbt, "e", int.class).ifPresent(i -> energyStorage.setEnergyStored(i));
         } else {
 
         }
