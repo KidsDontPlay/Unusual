@@ -10,7 +10,6 @@ import net.minecraft.tileentity.TileEntityType;
 import net.minecraftforge.common.ForgeConfigSpec;
 
 import kdp.unusual.block.GeneratorBlock;
-import kdp.unusual.tile.ModsGeneratorTile;
 import kdp.unusual.tile.RunningGeneratorTile;
 import kdp.unusual.tile.SeedGeneratorTile;
 import kdp.unusual.tile.StaringGeneratorTile;
@@ -20,13 +19,7 @@ public enum Generator {
             null),//
     RUNNING((GeneratorBlock) new GeneratorBlock("running_generator").setTileType(RunningGeneratorTile::new), 80_000, 20,
             null),//
-    SEED((GeneratorBlock) new GeneratorBlock("seed_generator").setTileType(SeedGeneratorTile::new), 60_000, 100,
-            null),//
-    MODS((GeneratorBlock) new GeneratorBlock("mods_generator").setTileType(ModsGeneratorTile::new), 60_000, 1000, b -> {
-        Map<String, ForgeConfigSpec.ConfigValue> result = new HashMap<>();
-        result.put("inverse", b.comment("inverse").define("inver", true));
-        return result;
-    });
+    SEED((GeneratorBlock) new GeneratorBlock("seed_generator").setTileType(SeedGeneratorTile::new), 60_000, 100, null);
 
     public final String name;
     public final GeneratorBlock block;
